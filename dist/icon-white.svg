@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" fill="none">
+  <!-- Rounded dark badge background -->
+  <rect width="1000" height="1000" rx="200" fill="#181C24" />
+
+  <!-- Vertical Spire / Mast in crisp white -->
+  <polygon points="505,100 524,130 527,515 528,900 485,900 497,515" fill="#FFFFFF" />
+
+  <!-- Diagonal Rising Beam from bottom left -->
+  <polygon points="100,900 482,504 660,375 664,480 528,580 495,604 110,900" fill="#FFFFFF" />
+
+  <!-- Architectural Origami Facets in crisp white / subtle slate -->
+  <polygon points="618,605 813,550 782,715 706,705" fill="#FFFFFF" />
+  <polygon points="706,705 656,725 646,750 740,715 778,790 812,787 782,715" fill="#FFFFFF" opacity="0.9" />
+  <polygon points="485,900 530,830 620,780 670,690 646,720 616,800 778,795 745,820 640,840 530,870 528,900" fill="#FFFFFF" opacity="0.95" />
+  <polygon points="812,787 900,670 940,800" fill="#FFFFFF" />
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" fill="none">
+  <!-- Slate blue container -->
+  <rect width="1000" height="1000" fill="#466B87" />
+
+  <!-- Vertical Spire / Mast -->
+  <polygon points="505,8 524,40 527,515 528,992 485,992 497,515" fill="#FFFFFF" />
+
+  <!-- Diagonal Rising Beam from bottom left -->
+  <polygon points="6,994 482,504 660,375 664,480 528,580 495,604 15,994" fill="#FFFFFF" />
+
+  <!-- Architectural Facets / Origami Structure in Lower Right -->
+  <!-- Top quadrilateral facet -->
+  <polygon points="618,605 813,550 782,715 706,705" fill="#FFFFFF" />
+  
+  <!-- Central connector -->
+  <polygon points="706,705 656,725 646,750 740,715 778,790 812,787 782,715" fill="#FFFFFF" />
+
+  <!-- Lower left angled leg -->
+  <polygon points="485,992 530,920 620,865 670,725 646,750 616,860 778,855 745,885 640,905 530,950 528,992" fill="#FFFFFF" />
+
+  <!-- Lower right triangular wing facet -->
+  <polygon points="812,787 935,622 990,790" fill="#FFFFFF" />
+</svg>

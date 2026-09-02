@@ -31,11 +31,30 @@ const REASONS = [
   },
 ];
 
+// Helper to extract email parameter from search query or hash
+function extractEmailFromUrl() {
+  const searchParams = new URLSearchParams(window.location.search);
+  let emailParam =
+    searchParams.get('email') ||
+    searchParams.get('Email') ||
+    searchParams.get('EMAIL') ||
+    searchParams.get('e') ||
+    searchParams.get('mail') ||
+    searchParams.get('to');
+
+  // Also check hash fragment if present (e.g. #email=...)
+  if (!emailParam && window.location.hash.includes('email=')) {
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+    emailParam = hashParams.get('email') || hashParams.get('Email');
+  }
+
+  return emailParam ? emailParam.trim().toLowerCase() : '';
+}
+
 export default function Unsubscribe() {
   const [email, setEmail] = useState('');
   const [selectedReason, setSelectedReason] = useState('frequency');
   const [customFeedback, setCustomFeedback] = useState('');
-  const [isInvalidLink, setIsInvalidLink] = useState(false);
 
   // Submission state
   const [isLoading, setIsLoading] = useState(false);
@@ -43,19 +62,28 @@ export default function Unsubscribe() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const emailParam = params.get('email');
-
-    if (emailParam && emailParam.trim()) {
-      setEmail(emailParam.trim().toLowerCase());
-      setIsInvalidLink(false);
-    } else {
-      setIsInvalidLink(true);
+    const foundEmail = extractEmailFromUrl();
+    if (foundEmail) {
+      setEmail(foundEmail);
     }
   }, []);
 
-  const handleUnsubscribe = async () => {
-    if (!email || isLoading) return;
+  const handleUnsubscribe = async (e) => {
+    if (e) e.preventDefault();
+
+    const targetEmail = email.trim().toLowerCase();
+
+    if (!targetEmail) {
+      setErrorMessage('Please enter your email address.');
+      return;
+    }
+
+    // Basic email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(targetEmail)) {
+      setErrorMessage('Please enter a valid email address (e.g. name@domain.com).');
+      return;
+    }
 
     setIsLoading(true);
     setErrorMessage('');
@@ -71,6 +99,7 @@ export default function Unsubscribe() {
       if (!FLOW_URL) {
         console.warn('⚠️ VITE_FLOW_URL is not set. Simulating success in development mode.');
         await new Promise((resolve) => setTimeout(resolve, 600));
+        setEmail(targetEmail);
         setIsSuccess(true);
         return;
       }
@@ -81,7 +110,7 @@ export default function Unsubscribe() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: email,
+          email: targetEmail,
           reason: finalReasonText,
         }),
       });
@@ -90,6 +119,7 @@ export default function Unsubscribe() {
         throw new Error('Unable to process your unsubscribe request. Please try again.');
       }
 
+      setEmail(targetEmail);
       setIsSuccess(true);
     } catch (err) {
       console.error('Submission error:', err);
@@ -101,21 +131,7 @@ export default function Unsubscribe() {
     }
   };
 
-  // State 1: Invalid link (missing email)
-  if (isInvalidLink) {
-    return (
-      <Layout>
-        <div className="message-card">
-          <h1 className="main-title">Invalid unsubscribe link</h1>
-          <p className="sub-title" style={{ marginBottom: '1.5rem' }}>
-            No email address was provided in the link. Please make sure you clicked the complete link from your Outlook email.
-          </p>
-        </div>
-      </Layout>
-    );
-  }
-
-  // State 2: Success Confirmation
+  // State 1: Success Confirmation
   if (isSuccess) {
     return (
       <Layout>
@@ -135,80 +151,119 @@ export default function Unsubscribe() {
     );
   }
 
-  // State 3: Main Unsubscribe Dialogue
+  // State 2: Main Unsubscribe Dialogue
   return (
     <Layout>
-      <h1 className="main-title">Do you want to unsubscribe?</h1>
-      <p className="sub-title">
-        Please select a reason for unsubscribing <strong>{email}</strong>:
-      </p>
+      <form onSubmit={handleUnsubscribe}>
+        <h1 className="main-title" style={{ marginBottom: '1.5rem' }}>
+          Do you want to unsubscribe?
+        </h1>
 
-      <div className="options-list">
-        {REASONS.map((item) => {
-          const isSelected = selectedReason === item.id;
-          return (
-            <div key={item.id}>
-              <div
-                className="option-item"
-                onClick={() => setSelectedReason(item.id)}
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    setSelectedReason(item.id);
-                  }
-                }}
-              >
-                <div className={`custom-checkbox ${isSelected ? 'checked' : ''}`}>
-                  {isSelected && (
-                    <svg className="check-icon" viewBox="0 0 24 24">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
+        <div style={{ marginBottom: '1.75rem', textAlign: 'left' }}>
+          <label
+            htmlFor="manual-email-input"
+            style={{
+              display: 'block',
+              fontSize: '0.95rem',
+              fontWeight: '500',
+              color: 'var(--text-main)',
+              marginBottom: '0.5rem',
+            }}
+          >
+            Enter your email address:
+          </label>
+          <input
+            id="manual-email-input"
+            type="email"
+            required
+            placeholder="e.g. name@company.com"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setErrorMessage('');
+            }}
+            className="custom-input-box"
+            style={{
+              marginTop: 0,
+              padding: '0.75rem 0.875rem',
+              fontSize: '0.95rem',
+              borderRadius: '6px',
+            }}
+            autoFocus={!email}
+          />
+        </div>
+
+        <div className="options-list">
+          {REASONS.map((item) => {
+            const isSelected = selectedReason === item.id;
+            return (
+              <div key={item.id}>
+                <div
+                  className="option-item"
+                  onClick={() => setSelectedReason(item.id)}
+                  role="radio"
+                  aria-checked={isSelected}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      setSelectedReason(item.id);
+                    }
+                  }}
+                >
+                  <div className={`custom-checkbox ${isSelected ? 'checked' : ''}`}>
+                    {isSelected && (
+                      <svg className="check-icon" viewBox="0 0 24 24">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
+
+                  <div className="option-text-group">
+                    <span className="option-label">{item.title}</span>
+                    <span className="option-desc">{item.desc}</span>
+                  </div>
                 </div>
 
-                <div className="option-text-group">
-                  <span className="option-label">{item.title}</span>
-                  <span className="option-desc">{item.desc}</span>
-                </div>
+                {item.id === 'other' && isSelected && (
+                  <input
+                    type="text"
+                    placeholder="Please specify (optional)..."
+                    value={customFeedback}
+                    onChange={(e) => setCustomFeedback(e.target.value)}
+                    className="custom-input-box"
+                    maxLength={250}
+                    style={{ marginTop: '0.5rem' }}
+                    autoFocus
+                  />
+                )}
               </div>
+            );
+          })}
+        </div>
 
-              {item.id === 'other' && isSelected && (
-                <input
-                  type="text"
-                  placeholder="Please specify (optional)..."
-                  value={customFeedback}
-                  onChange={(e) => setCustomFeedback(e.target.value)}
-                  className="custom-input-box"
-                  maxLength={250}
-                  autoFocus
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+        {errorMessage && (
+          <p className="error-text" style={{ marginBottom: '1rem' }}>
+            {errorMessage}
+          </p>
+        )}
 
-      {errorMessage && <p className="error-text">{errorMessage}</p>}
-
-      <div className="actions-group">
-        <button
-          type="button"
-          onClick={handleUnsubscribe}
-          disabled={isLoading}
-          className="btn btn-primary"
-        >
-          {isLoading ? (
-            <>
-              <span className="spinner-dark" /> Unsubscribing...
-            </>
-          ) : (
-            'Unsubscribe'
-          )}
-        </button>
-      </div>
+        <div className="actions-group">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn btn-primary"
+          >
+            {isLoading ? (
+              <>
+                <span className="spinner-dark" /> Unsubscribing...
+              </>
+            ) : (
+              'Unsubscribe'
+            )}
+          </button>
+        </div>
+      </form>
     </Layout>
   );
 }

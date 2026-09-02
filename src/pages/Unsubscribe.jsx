@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 
-const FLOW_URL = import.meta.env.VITE_FLOW_URL;
+const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
 
 const REASONS = [
   {
@@ -89,45 +89,28 @@ export default function Unsubscribe() {
     setErrorMessage('');
 
     const matched = REASONS.find((r) => r.id === selectedReason);
-    let finalReasonText = matched ? matched.title : selectedReason;
-
-    if (selectedReason === 'other' && customFeedback.trim()) {
-      finalReasonText += `: ${customFeedback.trim()}`;
-    }
+    const reason = selectedReason === 'other' && customFeedback.trim()
+      ? `${matched ? matched.title : selectedReason}: ${customFeedback.trim()}`
+      : (matched ? matched.title : selectedReason);
 
     try {
-      if (!FLOW_URL) {
-        console.warn('⚠️ VITE_FLOW_URL is not set. Simulating success in development mode.');
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        setEmail(targetEmail);
-        setIsSuccess(true);
-        return;
-      }
+      console.log("Sending to Google Script:", import.meta.env.VITE_GOOGLE_SCRIPT_URL);
 
-      const response = await fetch(FLOW_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: targetEmail,
-          reason: finalReasonText,
-        }),
+      const res = await fetch(import.meta.env.VITE_GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ email: targetEmail, reason })
       });
 
-      if (!response.ok) {
-        throw new Error('Unable to process your unsubscribe request. Please try again.');
-      }
+      const result = await res.text();
+      console.log("Google Script Response:", result);
 
       setEmail(targetEmail);
-      setIsSuccess(true);
-    } catch (err) {
-      console.error('Submission error:', err);
-      setErrorMessage(
-        err.message || 'Something went wrong while unsubscribing. Please try again.'
-      );
-    } finally {
       setIsLoading(false);
+      setIsSuccess(true);
+    } catch (error) {
+      console.error("Error:", error);
+      setIsLoading(false);
+      setErrorMessage(error.message || "Something went wrong while unsubscribing. Please try again.");
     }
   };
 
